@@ -5,6 +5,10 @@ Source links:
 - wdisseny.com/lluna - moon phases
 - sunrise-sunset.org/api
 
+Credits:
+- https://erikflowers.github.io/weather-icons/
+- https://github.com/joukos/PaperTTY
+
 ## Development
 
 ```
