@@ -1,0 +1,15 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+enum = "*"
+spidev = {version = "3.4", sys_platform = "!= 'darwin'"}
+'RPi.GPIO' = {version = "0.7.0", sys_platform = "!= 'darwin'"}
+python-dateutil = "*"
+pillow = "*"
+pyowm = "==2.10.0" # OpenWeather API
+click = "*" # Command Line Interface
