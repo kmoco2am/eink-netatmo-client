@@ -37,8 +37,6 @@ def convert_float(orig_value: str) -> str:
         return orig_value
 
 
-data_indoor: dict = dev.lastData()['Indoor']
-
 tempOutOrig: str = read_val(lastData, 'Outdoor', 'Temperature', '--.-')
 tempInOrig: str = read_val(lastData, 'Indoor', 'Temperature', '--.-')
 

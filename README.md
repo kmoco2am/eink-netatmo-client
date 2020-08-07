@@ -21,6 +21,7 @@ pipenv sync
 
 ```
 sudo pip3 install pipenv
+pipenv --python /usr/local/opt/python-3.8.5/bin/python3.8
 ```
 
 ```
@@ -38,13 +39,9 @@ sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev 
 wget https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tar.xz
 tar xf Python-3.8.5.tar.xz
 cd Python-3.8.5
-./configure --prefix=/usr/local/opt/python-3.8.5
+./configure --prefix=/usr/local/opt/python-3.8.5 --enable-optimizations
 make -j 4
 
 # Install
 sudo make altinstall
-
-# Change default
-sudo update-alternatives --config python
-
 ```
