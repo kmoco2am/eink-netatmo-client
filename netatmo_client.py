@@ -50,10 +50,10 @@ else:
 
 # 1 : Embedded credentials
 cred = {                           # You can hard code authentication information in the following lines
-    "CLIENT_ID" :  "5d28e44bad7ab3000f44ab3e",         # Your client ID from Netatmo app registration at http://dev.netatmo.com/dev/listapps
-    "CLIENT_SECRET" : "erZRMAFrO1RryZsdSWecEocC8",      # Your client app secret
-    "USERNAME" : "endsoft@post.cz",           # Your netatmo account username
-    "PASSWORD" : "7CJTdMjB67"            # Your netatmo account password
+    "CLIENT_ID" :  "xxx",         # Your client ID from Netatmo app registration at http://dev.netatmo.com/dev/listapps
+    "CLIENT_SECRET" : "xxx",      # Your client app secret
+    "USERNAME" : "xxx",           # Your netatmo account username
+    "PASSWORD" : "xxx"            # Your netatmo account password
 }
 
 # Other authentication setup management (optionals)
