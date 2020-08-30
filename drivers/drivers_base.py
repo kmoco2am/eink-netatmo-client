@@ -69,8 +69,8 @@ class DisplayDriver(ABC):
 
 class SpecialDriver(DisplayDriver):
     """Drivers that don't control hardware"""
-    default_width = 640
-    default_height = 384
+    default_width = 800
+    default_height = 600
 
     def __init__(self, name, width, height):
         super().__init__()
@@ -115,7 +115,7 @@ class Bitmap(SpecialDriver):
         self.file_format = file_format
 
     def init(self, **kwargs):
-        self.frame_buffer = Image.new('1', (self.width, self.height), 255)
+        self.frame_buffer = Image.new('L', (self.width, self.height), 255)
         self.current_frame = 0
 
     def draw(self, x, y, image):
