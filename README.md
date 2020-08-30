@@ -8,6 +8,7 @@ Source links:
 Credits:
 - https://erikflowers.github.io/weather-icons/
 - https://github.com/joukos/PaperTTY
+- https://github.com/philippelt/netatmo-api-python
 
 ## Development
 
@@ -15,18 +16,6 @@ Credits:
 pipenv --rm
 pipenv --python 3.8
 pipenv sync
-```
-
-## Installation
-
-```
-sudo pip3 install pipenv
-pipenv --python /usr/local/opt/python-3.8.5/bin/python3.8
-```
-
-```
-* * * * * /bin/bash -c /home/pi/workspace/eink-py/run.sh
-# * * * * * /bin/bash -c /home/pi/workspace/eink-py/run.sh >>/home/pi/workspace/eink-py/cron.log 2>&1
 ```
 
 ## Python 3.8 on Raspberry Pi
@@ -44,4 +33,30 @@ make -j 4
 
 # Install
 sudo make altinstall
+```
+
+## Installation by Systemd
+
+```
+sudo cp weather_main.service /etc/systemd/system/weather_main.service
+sudo systemctl start weather_main.service
+
+sudo systemctl status weather_main.service
+
+sudo systemctl stop weather_main.service
+
+sudo systemctl enable weather_main.service
+```
+
+## Run it manually
+
+```
+sudo 
+
+sudo \
+    /usr/local/bin/pipenv run python \
+    ./weather_main.py \ 
+    --driver=IT8951 \
+    bitmap \
+    --file=/home/pi/workspace/waveshare-it8951/18.bmp
 ```

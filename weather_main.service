@@ -1,0 +1,19 @@
+[Unit]
+Description=WeatherMain
+DefaultDependencies=no
+
+[Service]
+User=pi
+Type=simple
+KillSignal=SIGINT
+TimeoutStopSec=8
+Restart=on-failure
+
+### Change the paths below to match yours
+WorkingDirectory=/home/pi/workspace/eink-py
+ExecStart=/home/pi/workspace/eink-py/weather_main.sh
+###
+
+[Install]
+WantedBy=sysinit.target
+

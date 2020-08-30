@@ -4,7 +4,8 @@
 import os
 import sys
 
-import netatmo_client
+from model.weather import NetatmoDataLoader
+
 from PIL import Image, ImageDraw, ImageFont
 
 from datetime import datetime
@@ -14,11 +15,11 @@ from widget.weather_icon_lookup import WeatherIconLookup
 project_dir = os.path.dirname(os.path.realpath(__file__))
 
 # Access to the sensors
-auth = netatmo_client.ClientAuth()
-dev = netatmo_client.WeatherStationData(auth)
+loader = NetatmoDataLoader()
+lastData: dict = loader.get_last_data()
 
-lastData: dict = dev.lastData()
-
+xdata = loader.load_data()
+print(xdata)
 
 def read_val(data: dict, section: str, value: str, default: str) -> str:
     if section in data:
