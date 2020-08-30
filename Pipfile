@@ -12,3 +12,4 @@ python-dateutil = "*"
 pillow = "*"
 pyowm = "==2.10.0" # OpenWeather API
 click = "*" # Command Line Interface
+pytz = "*"
