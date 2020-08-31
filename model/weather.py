@@ -31,11 +31,11 @@ class WeatherModel:
 class NetatmoDataLoader:
     def __init__(self) -> None:
         self.auth = netatmo_client.ClientAuth()
-        self.dev = netatmo_client.WeatherStationData(self.auth)
 
     def get_last_data(self) -> dict:
-        return self.dev.lastData()
+        dev = netatmo_client.WeatherStationData(self.auth)
+        return dev.lastData()
 
     def load_data(self) -> WeatherModel:
-        data = self.dev.lastData()
+        data = self.get_last_data()
         return WeatherModel(data)

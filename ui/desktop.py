@@ -50,10 +50,10 @@ class Desktop:
         #self.window = PanelWidget(800, 600)
 
     def render(self, data: dict):
-        #image = Image.new('L', (self.window.height, self.window.width), 255)
+        # image = Image.new('L', (self.window.height, self.window.width), 255)
         image = Image.new('L', (800, 600), 255)
         draw = ImageDraw.Draw(image)
-        #self.window.draw(draw)
+        # self.window.draw(draw)
         self.old_render(draw, data)
         return image
 

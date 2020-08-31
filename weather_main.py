@@ -68,8 +68,8 @@ def main(settings):
 
     while True:
         try:
-            lastData: dict = loader.get_last_data()
-            image = desktop.render(lastData)
+            last_data: dict = loader.get_last_data()
+            image = desktop.render(last_data)
             wcm.driver.draw(0, 0, image)
             time.sleep(60)
         except ProgramKilled:
