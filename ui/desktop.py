@@ -54,8 +54,23 @@ class Desktop:
         image = Image.new('L', (800, 600), 255)
         draw = ImageDraw.Draw(image)
         # self.window.draw(draw)
-        self.old_render(draw, data)
+        if data is None:
+            self.render_warning(draw)
+        else:
+            self.old_render(draw, data)
+
+        self.render_time(draw)
         return image
+
+    def render_warning(self, draw):
+        draw.text((50, 250), "No data available!", font=self.font_large, fill=0)
+
+    def render_time(self, draw):
+        today = datetime.today()
+        today_date_str = today.strftime("%A, %d %B %Y")
+        draw.text((50, 20), today_date_str, font=self.font_medium, fill=0)
+        today_time_str = today.strftime("%H:%M")
+        draw.text((550, 50), today_time_str, font=self.font_large, fill=0)
 
     def old_render(self, draw, data: dict):
         temp_out_orig: str = read_val(data, 'Outdoor', 'Temperature', '--.-')
@@ -75,12 +90,6 @@ class Desktop:
         draw.line((400, 410, 400, 580), fill=0, width=3)
         draw.line((200, 410, 200, 580), fill=0, width=3)
         draw.line((600, 410, 600, 580), fill=0, width=3)
-
-        today = datetime.today()
-        today_date_str = today.strftime("%A, %d %B %Y")
-        draw.text((50, 20), today_date_str, font=self.font_medium, fill=0)
-        today_time_str = today.strftime("%H:%M")
-        draw.text((550, 50), today_time_str, font=self.font_large, fill=0)
 
         draw.text((100, 150), self.icon_lookup.look_up_with_name('wi_sunrise'), font=self.font_weather_medium, fill=0)
         draw.text((350, 150), self.icon_lookup.look_up_with_name('wi_sunset'), font=self.font_weather_medium, fill=0)
