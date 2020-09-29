@@ -1,4 +1,5 @@
 import os
+import socket
 import time
 
 from model.weather import NetatmoDataLoader
@@ -12,6 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 from ui.desktop import Desktop
 
 WAIT_TIME_SECONDS = 5
+
 
 class WeatherClientMain:
     """The main class for Netatmo Weather Station client"""
@@ -68,7 +70,10 @@ def main(settings):
 
     while True:
         try:
-            last_data: dict = loader.get_last_data()
+            try:
+                last_data: dict = loader.get_last_data()
+            except socket.timeout:
+                last_data = None
             image = desktop.render(last_data)
             wcm.driver.draw(0, 0, image)
             time.sleep(60)
