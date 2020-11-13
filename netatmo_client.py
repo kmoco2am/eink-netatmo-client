@@ -151,6 +151,8 @@ class NoDevice( Exception ):
 class AuthFailure( Exception ):
     pass
 
+class NoData( Exception ):
+    pass
 
 class ClientAuth:
     """
@@ -297,6 +299,8 @@ class WeatherStationData:
             "access_token" : self.getAuthToken
         }
         resp = postRequest(_GETSTATIONDATA_REQ, postParams)
+        if not resp : raise NoData("No data provided")
+
         self.rawData = resp['body']['devices']
         # Weather data
         if not self.rawData : raise NoDevice("No weather station available")

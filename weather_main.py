@@ -2,6 +2,7 @@ import os
 import socket
 import time
 
+import netatmo_client
 from model.weather import NetatmoDataLoader
 from schedule import configure_signals, ProgramKilled
 from schedule.job import Job
@@ -72,6 +73,8 @@ def main(settings):
         try:
             try:
                 last_data: dict = loader.get_last_data()
+            except netatmo_client.NoData:
+                last_data = None
             except socket.timeout:
                 last_data = None
             image = desktop.render(last_data)
