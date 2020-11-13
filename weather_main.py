@@ -1,6 +1,7 @@
 import os
 import socket
 import time
+from typing import Optional, Tuple
 
 import netatmo_client
 from model.weather import NetatmoDataLoader
@@ -62,23 +63,40 @@ class Settings:
 @click.pass_obj
 def main(settings):
     configure_signals()
-    wcm = WeatherClientMain(**settings.args)
+    wcm: WeatherClientMain = WeatherClientMain(**settings.args)
     wcm.init_display()
     loader = NetatmoDataLoader()
     project_dir = os.path.dirname(os.path.realpath(__file__))
     resources_dir = os.path.join(project_dir, "resources")
     desktop = Desktop(resources_dir)
 
+    updates: int = 0
+    previous_image: Optional[Image] = None
+    diff_bbox: Optional[Tuple[int, int, int, int]] = None
     while True:
         try:
             try:
-                last_data: dict = loader.get_last_data()
+                last_data: Optional[dict] = loader.get_last_data()
             except netatmo_client.NoData:
                 last_data = None
             except socket.timeout:
                 last_data = None
             image = desktop.render(last_data)
-            wcm.driver.draw(0, 0, image)
+
+            if previous_image:
+                diff_bbox = desktop.band(desktop.img_diff(image, previous_image))
+
+            if diff_bbox:
+                # increment update counter
+                updates = (updates + 1) % 60
+                changed_image_area = image.crop(diff_bbox)
+                wcm.driver.draw(diff_bbox[0], diff_bbox[1], changed_image_area)
+            else:
+                if updates == 0:
+                    updates = (updates + 1) % 60
+                    wcm.driver.draw(0, 0, image)
+
+            previous_image = image.copy()
             time.sleep(60)
         except ProgramKilled:
             print("Weather main killed")

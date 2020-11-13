@@ -1,8 +1,9 @@
 import os
 
 from datetime import datetime
+from typing import Optional
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageChops
 
 from widget.panel import PanelWidget
 from widget.weather_icon_lookup import WeatherIconLookup
@@ -47,9 +48,20 @@ class Desktop:
         self.icon_lookup = WeatherIconLookup(
             os.path.join(resource_dir, 'weathericons.xml'))
 
-        #self.window = PanelWidget(800, 600)
+        # self.window = PanelWidget(800, 600)
 
-    def render(self, data: dict):
+    @staticmethod
+    def band(bb):
+        """Stretch a bounding box's X coordinates to be divisible by 8,
+           otherwise weird artifacts occur as some bits are skipped."""
+        return (int(bb[0] / 8) * 8, bb[1], int((bb[2] + 7) / 8) * 8, bb[3]) if bb else None
+
+    @staticmethod
+    def img_diff(img1, img2):
+        """Return the bounding box of differences between two images"""
+        return ImageChops.difference(img1, img2).getbbox()
+
+    def render(self, data: Optional[dict]) -> Image:
         # image = Image.new('L', (self.window.height, self.window.width), 255)
         image = Image.new('L', (800, 600), 255)
         draw = ImageDraw.Draw(image)
@@ -62,17 +74,17 @@ class Desktop:
         self.render_time(draw)
         return image
 
-    def render_warning(self, draw):
+    def render_warning(self, draw) -> None:
         draw.text((50, 250), "No data available!", font=self.font_large, fill=0)
 
-    def render_time(self, draw):
+    def render_time(self, draw) -> None:
         today = datetime.today()
         today_date_str = today.strftime("%A, %d %B %Y")
         draw.text((50, 20), today_date_str, font=self.font_medium, fill=0)
         today_time_str = today.strftime("%H:%M")
         draw.text((550, 50), today_time_str, font=self.font_large, fill=0)
 
-    def old_render(self, draw, data: dict):
+    def old_render(self, draw, data: dict) -> None:
         temp_out_orig: str = read_val(data, 'Outdoor', 'Temperature', '--.-')
         temp_in_orig: str = read_val(data, 'Indoor', 'Temperature', '--.-')
 
@@ -95,7 +107,8 @@ class Desktop:
         draw.text((350, 150), self.icon_lookup.look_up_with_name('wi_sunset'), font=self.font_weather_medium, fill=0)
 
         # indoor
-        draw.text((100, 240), self.icon_lookup.look_up_with_name('wi_thermometer'), font=self.font_weather_large, fill=0)
+        draw.text((100, 240), self.icon_lookup.look_up_with_name('wi_thermometer'), font=self.font_weather_large,
+                  fill=0)
         draw.text((150, 230), temp_in, font=self.font_large, fill=0)
         draw.text((320, 230), self.icon_lookup.look_up_with_name('wi_celsius'), font=self.font_weather_large, fill=0)
 
@@ -107,13 +120,13 @@ class Desktop:
         draw.text((330, 314), "ppm", font=self.font_small, fill=0)
 
         # outdoor
-        draw.text((460, 240), self.icon_lookup.look_up_with_name('wi_thermometer'), font=self.font_weather_large, fill=0)
+        draw.text((460, 240), self.icon_lookup.look_up_with_name('wi_thermometer'), font=self.font_weather_large,
+                  fill=0)
         draw.text((510, 230), tempOut, font=self.font_large, fill=0)
         draw.text((680, 230), self.icon_lookup.look_up_with_name('wi_celsius'), font=self.font_weather_large, fill=0)
 
         draw.text((480, 310), self.icon_lookup.look_up_with_name('wi_humidity'), font=self.font_weather_medium, fill=0)
         draw.text((510, 312), "%s%%" % humidity_out, font=self.font_medium, fill=0)
-
 
     def show_widget_border(self, show_border: bool):
         self.window.is_draw_border(show_border)
