@@ -1,10 +1,11 @@
 import os
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont, ImageChops
 
+from ui.render_result import RenderResult
 from widget.panel import PanelWidget
 from widget.weather_icon_lookup import WeatherIconLookup
 
@@ -51,17 +52,17 @@ class Desktop:
         # self.window = PanelWidget(800, 600)
 
     @staticmethod
-    def band(bb):
+    def band(bb: Tuple[int, int, int, int]) -> Tuple[int, int, int, int]:
         """Stretch a bounding box's X coordinates to be divisible by 8,
            otherwise weird artifacts occur as some bits are skipped."""
         return (int(bb[0] / 8) * 8, bb[1], int((bb[2] + 7) / 8) * 8, bb[3]) if bb else None
 
     @staticmethod
-    def img_diff(img1, img2):
+    def img_diff(img1: Image, img2: Image) -> Optional[Tuple[int, int, int, int]]:
         """Return the bounding box of differences between two images"""
         return ImageChops.difference(img1, img2).getbbox()
 
-    def render(self, data: Optional[dict]) -> Image:
+    def render(self, data: Optional[dict]) -> RenderResult:
         # image = Image.new('L', (self.window.height, self.window.width), 255)
         image = Image.new('L', (800, 600), 255)
         draw = ImageDraw.Draw(image)
@@ -72,7 +73,10 @@ class Desktop:
             self.old_render(draw, data)
 
         self.render_time(draw)
-        return image
+
+        result = RenderResult(image)
+        result.add_bounding_box((0,0,800,600))
+        return result
 
     def render_warning(self, draw) -> None:
         draw.text((50, 250), "No data available!", font=self.font_large, fill=0)

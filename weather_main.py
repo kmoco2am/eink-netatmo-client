@@ -13,6 +13,7 @@ from infra.driver_manager import DriverManager
 from PIL import Image, ImageDraw, ImageFont
 
 from ui.desktop import Desktop
+from ui.render_result import RenderResult, BoundingBox
 
 WAIT_TIME_SECONDS = 5
 
@@ -72,7 +73,6 @@ def main(settings):
 
     updates: int = 0
     previous_image: Optional[Image] = None
-    diff_bbox: Optional[Tuple[int, int, int, int]] = None
     while True:
         try:
             try:
@@ -81,23 +81,39 @@ def main(settings):
                 last_data = None
             except socket.timeout:
                 last_data = None
-            image = desktop.render(last_data)
+            rr: RenderResult = desktop.render(last_data)
+            image = rr.image
+            bbs = rr.bounding_boxes
 
-            if previous_image:
-                diff_bbox = desktop.band(desktop.img_diff(image, previous_image))
-
-            if diff_bbox:
-                # increment update counter
+            if updates == 0:
+                # full redraw
                 updates = (updates + 1) % 60
-                changed_image_area = image.crop(diff_bbox)
-                wcm.driver.draw(diff_bbox[0], diff_bbox[1], changed_image_area)
+                wcm.driver.draw(0, 0, image)
             else:
-                if updates == 0:
+                change_detected = False
+                for bb in bbs:
+                    banded_bb = desktop.band(bb)
+                    cropped_image = image.crop(banded_bb)
+                    cropped_previous_image = previous_image.crop(banded_bb)
+
+                    img_diff: BoundingBox = desktop.img_diff(cropped_image, cropped_previous_image)
+
+                    if img_diff:
+                        # there is some difference
+                        change_detected = True
+
+                        diff_bbox: BoundingBox = desktop.band(img_diff)
+                        changed_image_area = cropped_image.crop(diff_bbox)
+                        x = banded_bb[0] + diff_bbox[0]
+                        y = banded_bb[1] + diff_bbox[1]
+                        wcm.driver.draw(x, y, changed_image_area)
+
+                if change_detected:
+                    # increment update counter
                     updates = (updates + 1) % 60
-                    wcm.driver.draw(0, 0, image)
 
             previous_image = image.copy()
-            time.sleep(60)
+            time.sleep(10)
         except ProgramKilled:
             print("Weather main killed")
             break
