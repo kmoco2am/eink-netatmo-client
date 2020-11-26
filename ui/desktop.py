@@ -66,16 +66,24 @@ class Desktop:
         # image = Image.new('L', (self.window.height, self.window.width), 255)
         image = Image.new('L', (800, 600), 255)
         draw = ImageDraw.Draw(image)
+        result = RenderResult(image)
         # self.window.draw(draw)
         if data is None:
             self.render_warning(draw)
+            result.add_bounding_box((0,0,800,600))
         else:
             self.old_render(draw, data)
+            # bb for date and time
+            result.add_bounding_box((0,0,800,200))
+            # bb for indoor
+            result.add_bounding_box((0,200,400,400))
+            # bb for outdoor
+            result.add_bounding_box((400,200,800,400))
+            # bb for the rest
+            result.add_bounding_box((0,400,800,600))
 
         self.render_time(draw)
 
-        result = RenderResult(image)
-        result.add_bounding_box((0,0,800,600))
         return result
 
     def render_warning(self, draw) -> None:
