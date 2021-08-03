@@ -46,6 +46,8 @@ sudo systemctl status weather_main.service
 sudo systemctl stop weather_main.service
 
 sudo systemctl enable weather_main.service
+
+sudo systemctl restart weather_main.service
 ```
 
 ## Run it manually
@@ -60,3 +62,10 @@ sudo \
     bitmap \
     --file=/home/pi/workspace/waveshare-it8951/18.bmp
 ```
+
+## Checking status
+
+```bash
+sudo journalctl -u weather_main.service -f -n 100
+```
+
