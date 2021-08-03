@@ -1,5 +1,5 @@
 import netatmo_client
-
+import logging
 
 class WeatherOutsideModel:
     def __init__(self, data) -> None:
@@ -30,6 +30,7 @@ class WeatherModel:
 
 class NetatmoDataLoader:
     def __init__(self) -> None:
+        logging.info("Netatmo authentication")
         self.auth = netatmo_client.ClientAuth()
 
     def get_last_data(self) -> dict:

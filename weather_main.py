@@ -1,6 +1,7 @@
 import os
 import socket
 import time
+import logging
 from typing import Optional, Tuple
 
 import netatmo_client
@@ -14,9 +15,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ui.desktop import Desktop
 from ui.render_result import RenderResult, BoundingBox
-
-WAIT_TIME_SECONDS = 5
-
 
 class WeatherClientMain:
     """The main class for Netatmo Weather Station client"""
@@ -35,11 +33,13 @@ class WeatherClientMain:
         self.white = self.driver.white
         self.black = self.driver.black
         self.encoding = encoding
+        logging.info("Drivers loaded")
 
     def init_display(self):
         """Initialize the display - call the driver's init method"""
         self.driver.init(partial=self.partial)
         self.initialized = True
+        logging.info("Display initialized")
 
     def ready(self):
         """Check that the driver is loaded and initialized"""
@@ -48,7 +48,7 @@ class WeatherClientMain:
     @staticmethod
     def error(msg, code=1):
         """Print error and exit"""
-        print(msg)
+        logging.error(msg)
         sys.exit(code)
 
 
@@ -73,13 +73,17 @@ def main(settings):
 
     updates: int = 0
     previous_image: Optional[Image] = None
+    logging.info("Starting data loop")
     while True:
         try:
             try:
                 last_data: Optional[dict] = loader.get_last_data()
-            except netatmo_client.NoData:
-                last_data = None
+                logging.debug("Data gathered")
             except socket.timeout:
+                logging.warning("Netatmo Socket Timeout")
+                last_data = None
+            except netatmo_client.NoData:
+                logging.warning("No Data")
                 last_data = None
             rr: RenderResult = desktop.render(last_data)
             image = rr.image
@@ -88,9 +92,11 @@ def main(settings):
             if updates == 0:
                 # full redraw
                 updates = (updates + 1) % 60
+                logging.debug("Full redraw")
                 wcm.driver.draw(0, 0, image)
             else:
                 change_detected = False
+                logging.debug("Partial redraw")
                 for bb in bbs:
                     banded_bb = desktop.band(bb)
                     cropped_image = image.crop(banded_bb)
@@ -115,7 +121,7 @@ def main(settings):
             previous_image = image.copy()
             time.sleep(10)
         except ProgramKilled:
-            print("Weather main killed")
+            logging.info("Weather main killed")
             break
 
 
@@ -159,6 +165,8 @@ def cli(ctx, driver, nopartial, encoding):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.info("Weather main is starting ...")
     # add all the CLI commands
     cli.add_command(print_bitmap)
     cli.add_command(list_drivers)
