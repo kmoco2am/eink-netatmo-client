@@ -1,42 +1,77 @@
-import netatmo_client
+from dataclasses import dataclass
+from typing import Optional, TypeVar
+
+import lnetatmo
 import logging
 
+T = TypeVar("T")
+
+
+def sanitize_val(d: dict, value_name: str, default_value: Optional[T]) -> Optional[T]:
+    if d is None:
+        return default_value
+    elif value_name in d:
+        return d[value_name]
+    else:
+        return default_value
+
+
+DEFAULT_NONE_TEMPERATURE = '-.--'
+DEFAULT_NONE_HUMIDITY = '--'
+DEFAULT_NONE_CO2 = '---'
+
+
+@dataclass
 class WeatherOutsideModel:
-    def __init__(self, data) -> None:
-        self._temperature = data['Temperature']
-        self._humidity = data['Humidity']
+    temperature: str
+    humidity: str
+
+    def __init__(self, temperature: Optional[str], humidity: Optional[str]):
+        self.temperature = temperature or DEFAULT_NONE_TEMPERATURE
+        self.humidity = humidity or DEFAULT_NONE_HUMIDITY
 
 
+@dataclass
 class WeatherInsideModel:
-    def __init__(self, data) -> None:
-        self._temperature = data['Temperature']
-        self._humidity = data['Humidity']
-        self._co2 = data['CO2']
+    temperature: str
+    humidity: str
+    co2: str
+
+    def __init__(self, temperature: Optional[str], humidity: Optional[str], co2: Optional[str]):
+        self.temperature = temperature or DEFAULT_NONE_TEMPERATURE
+        self.humidity = humidity or DEFAULT_NONE_HUMIDITY
+        self.co2 = co2 or DEFAULT_NONE_CO2
 
 
+@dataclass
 class WeatherModel:
-    def __init__(self, data: dict) -> None:
-        self._outside = WeatherOutsideModel(data['Outdoor'])
-        self._inside = WeatherInsideModel(data['Indoor'])
+    outside: WeatherOutsideModel
+    inside: WeatherInsideModel
 
-    @property
-    def outside(self) -> WeatherOutsideModel:
-        return self._outside
-
-    @property
-    def inside(self) -> WeatherInsideModel:
-        return self._inside
-
+    def __init__(self, outside: WeatherOutsideModel, inside: WeatherInsideModel):
+        self.outside = outside
+        self.inside = inside
 
 class NetatmoDataLoader:
     def __init__(self) -> None:
         logging.info("Netatmo authentication")
-        self.auth = netatmo_client.ClientAuth()
+        self.auth = lnetatmo.ClientAuth()
 
-    def get_last_data(self) -> dict:
-        dev = netatmo_client.WeatherStationData(self.auth)
-        return dev.lastData()
-
-    def load_data(self) -> WeatherModel:
-        data = self.get_last_data()
-        return WeatherModel(data)
+    def load_data(self) -> Optional[WeatherModel]:
+        client = lnetatmo.WeatherStationData(self.auth)
+        data = client.lastData()
+        if data:
+            outdoor_data = sanitize_val(data, 'Outdoor', None)
+            indoor_data = sanitize_val(data, 'Indoor', None)
+            outside_model = WeatherOutsideModel(
+                sanitize_val(outdoor_data, 'Temperature', DEFAULT_NONE_TEMPERATURE),
+                sanitize_val(outdoor_data, 'Humidity', DEFAULT_NONE_HUMIDITY)
+            )
+            inside_model = WeatherInsideModel(
+                sanitize_val(indoor_data, 'Temperature', DEFAULT_NONE_TEMPERATURE),
+                sanitize_val(indoor_data, 'Humidity', DEFAULT_NONE_HUMIDITY),
+                sanitize_val(indoor_data, 'CO2', DEFAULT_NONE_CO2)
+            )
+            return WeatherModel(outside_model, inside_model)
+        else:
+            return None

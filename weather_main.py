@@ -2,19 +2,18 @@ import os
 import socket
 import time
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
-import netatmo_client
-from model.weather import NetatmoDataLoader
+from model.weather import NetatmoDataLoader, WeatherModel, WeatherOutsideModel, WeatherInsideModel
 from schedule import configure_signals, ProgramKilled
-from schedule.job import Job
 import click
 import sys
 from infra.driver_manager import DriverManager
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 from ui.desktop import Desktop
 from ui.render_result import RenderResult, BoundingBox
+
 
 class WeatherClientMain:
     """The main class for Netatmo Weather Station client"""
@@ -54,38 +53,65 @@ class WeatherClientMain:
 
 class Settings:
     """A class to store CLI settings so they can be referenced in the subcommands"""
-    args = {}
+    args: dict = {}
+
+    project_dir: str
+    output_dir: str
+    settings_dir: str
 
     def __init__(self, **kwargs):
         self.args = kwargs
 
 
+@click.command(name='demo')
+@click.pass_obj
+def draw_demo(settings):
+    desktop = Desktop(settings.resources_dir)
+    data1: Optional[WeatherModel] = None
+    draw_one_demo_file(data1, desktop, settings.output_dir, "demo_nodata")
+    data2: WeatherModel = WeatherModel(
+        WeatherOutsideModel(None, None),
+        WeatherInsideModel(None, None, None)
+    )
+    draw_one_demo_file(data2, desktop, settings.output_dir, "demo_empty")
+    data3: WeatherModel = WeatherModel(
+        WeatherOutsideModel('1.1', '56'),
+        WeatherInsideModel('24.3', '65', '1223')
+    )
+    draw_one_demo_file(data3, desktop, settings.output_dir, "demo_data3")
+    logging.info("Demo pictures printed. Exitting.")
+
+
+def draw_one_demo_file(data: WeatherModel, desktop: Desktop, output_dir: str, filename: str):
+    rr: RenderResult = desktop.render_modern(data)
+    image = rr.image
+    full_filename = os.path.join(output_dir, filename) + ".png"
+    image.save(full_filename, "PNG")
+    logging.info("Demo image generated: " + full_filename)
+
+
 @click.command(name='main')
 @click.pass_obj
-def main(settings):
+def main(settings: Settings):
     configure_signals()
     wcm: WeatherClientMain = WeatherClientMain(**settings.args)
     wcm.init_display()
     loader = NetatmoDataLoader()
-    project_dir = os.path.dirname(os.path.realpath(__file__))
-    resources_dir = os.path.join(project_dir, "resources")
-    desktop = Desktop(resources_dir)
+    desktop = Desktop(settings.resources_dir)
 
     updates: int = 0
     previous_image: Optional[Image] = None
     logging.info("Starting data loop")
     while True:
         try:
+            data: Optional[WeatherModel]
             try:
-                last_data: Optional[dict] = loader.get_last_data()
+                data = loader.load_data()
                 logging.debug("Data gathered")
             except socket.timeout:
                 logging.warning("Netatmo Socket Timeout")
-                last_data = None
-            except netatmo_client.NoData:
-                logging.warning("No Data")
-                last_data = None
-            rr: RenderResult = desktop.render(last_data)
+                data = None
+            rr: RenderResult = desktop.render(data)
             image = rr.image
             bbs = rr.bounding_boxes
 
@@ -119,6 +145,7 @@ def main(settings):
                     updates = (updates + 1) % 60
 
             previous_image = image.copy()
+            logging.debug("Iteration finished")
             time.sleep(10)
         except ProgramKilled:
             logging.info("Weather main killed")
@@ -148,9 +175,12 @@ def list_drivers():
 @click.option('--driver', default=None, help='Select display driver')
 @click.option('--nopartial', is_flag=True, default=False, help="Don't use partial updates even if display supports it")
 @click.option('--encoding', default='utf-8', help='Encoding to use for the buffer', show_default=True)
+@click.option('--debug', is_flag=True, default=False, help="Enable debug logging")
 @click.pass_context
-def cli(ctx, driver, nopartial, encoding):
+def cli(ctx, driver, nopartial, encoding, debug):
     """CLI configuration"""
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     manager = DriverManager()
     if not driver:
         WeatherClientMain.error(
@@ -160,7 +190,16 @@ def cli(ctx, driver, nopartial, encoding):
         matched_drivers = manager.get_driver_by_name(driver)
         if not matched_drivers:
             WeatherClientMain.error('Invalid driver selection, choose from:\n{}'.format(manager.get_driver_list()))
-        ctx.obj = Settings(driver=matched_drivers[0], partial=not nopartial, encoding=encoding)
+
+    project_dir = os.path.dirname(os.path.realpath(__file__))
+
+    s = Settings(driver=matched_drivers[0],
+                   partial=not nopartial,
+                   encoding=encoding)
+    s.project_dir=project_dir
+    s.output_dir=os.path.join(project_dir, "output")
+    s.resources_dir=os.path.join(project_dir, "resources")
+    ctx.obj = s
     pass
 
 
@@ -171,5 +210,6 @@ if __name__ == '__main__':
     cli.add_command(print_bitmap)
     cli.add_command(list_drivers)
     cli.add_command(main)
+    cli.add_command(draw_demo)
     cli()
 

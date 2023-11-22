@@ -5,19 +5,26 @@ from typing import Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont, ImageChops
 
+from model.weather import WeatherModel
 from ui.render_result import RenderResult
+from widget.alignments import Alignments
 from widget.panel import PanelWidget
+from widget.text import TextWidget
 from widget.weather_icon_lookup import WeatherIconLookup
 
 
 def read_val(data: dict, section: str, value: str, default: str) -> str:
     if section in data:
-        if value in data[section]:
-            return data[section][value]
-        else:
-            return default
+        return sanitize_val(data[section], value, default)
     else:
         return default
+
+
+def sanitize_val(d: dict, value_name: str, default_value: str) -> str:
+    if value_name in d:
+        return d[value_name]
+    else:
+        return default_value
 
 
 def convert_float(orig_value: str) -> str:
@@ -29,21 +36,16 @@ def convert_float(orig_value: str) -> str:
 
 class Desktop:
     def __init__(self, resource_dir: str):
-        self.font_large = ImageFont.truetype(
-            os.path.join(resource_dir, 'Inconsolata-Regular.ttf'), size=74)
-        self.font_medium = ImageFont.truetype(
-            os.path.join(resource_dir, 'Inconsolata-Regular.ttf'), size=34)
-        self.font_small = ImageFont.truetype(
-            os.path.join(resource_dir, 'Inconsolata-Regular.ttf'), size=20)
-        self.font_weather_large = ImageFont.truetype(
-            os.path.join(resource_dir, 'weathericons-regular-webfont.ttf'),
-            size=47)
-        self.font_weather_medium = ImageFont.truetype(
-            os.path.join(resource_dir, 'weathericons-regular-webfont.ttf'),
-            size=30)
-        self.font_weather_small = ImageFont.truetype(
-            os.path.join(resource_dir, 'weathericons-regular-webfont.ttf'),
-            size=27)
+        default_font: str = os.path.join(resource_dir, 'RobotoCondensed-Regular.ttf')
+        self.font_large = ImageFont.truetype(default_font, size=70)
+        self.font_medium = ImageFont.truetype(default_font, size=40)
+        self.font_small = ImageFont.truetype(default_font, size=20)
+        self.font_huge = ImageFont.truetype(default_font, size=140)
+
+        icons_font: str = os.path.join(resource_dir, 'weathericons-regular-webfont.ttf')
+        self.font_weather_large = ImageFont.truetype(icons_font, size=47)
+        self.font_weather_medium = ImageFont.truetype(icons_font, size=30)
+        self.font_weather_small = ImageFont.truetype(icons_font, size=27)
 
         # https://erikflowers.github.io/weather-icons/
         self.icon_lookup = WeatherIconLookup(
@@ -62,7 +64,102 @@ class Desktop:
         """Return the bounding box of differences between two images"""
         return ImageChops.difference(img1, img2).getbbox()
 
-    def render(self, data: Optional[dict]) -> RenderResult:
+
+    def render_modern(self, data: Optional[WeatherModel]) -> RenderResult:
+        image = Image.new('L', (800, 600), 255)
+        draw = ImageDraw.Draw(image)
+        result = RenderResult(image)
+
+        # ------
+        draw.line((20, 300, 780, 300), fill=0, width=3)
+        # |
+        draw.line((400, 20, 400, 290), fill=0, width=3)
+        # |
+        draw.line((400, 310, 400, 580), fill=0, width=3)
+
+        main_panel: PanelWidget = PanelWidget(800,600)
+
+        if data is None:
+            pass
+        else:
+            temp_out_orig: str = data.outside.temperature
+            temp_in_orig: str = data.inside.temperature
+
+            tempOut: str = convert_float(temp_out_orig)
+            temp_in: str = convert_float(temp_in_orig)
+
+            humidity_out: str = data.outside.humidity
+            humidity_in: str = data.inside.humidity
+
+            co2_in: str = data.inside.co2
+
+            indoor_panel: PanelWidget = self.render_temp(temp_in)
+            indoor_panel.left = 00
+            indoor_panel.top = 0
+
+            main_panel.add_child(indoor_panel)
+
+        # time
+        today: datetime = datetime.today()
+
+        clock_text: TextWidget = TextWidget(400, 140, font=self.font_huge)
+        clock_text.left = 400
+        clock_text.top = 70
+        clock_text.text = today.strftime("%H:%M")
+        main_panel.add_child(clock_text)
+
+        date_text: TextWidget = TextWidget(370, 50, font=self.font_medium)
+        date_text.left = 415
+        date_text.top = 15
+        date_text.horizontal_alignment = Alignments.LEFT
+        date_text.text = today.strftime("%d %B %Y")
+        main_panel.add_child(date_text)
+
+        main_panel.is_children_draw_border(False)
+        main_panel.draw(draw)
+
+        result.add_bounding_box((0,0,400,300))
+        result.add_bounding_box((0,300,400,600))
+        result.add_bounding_box((400,0,800,300))
+        result.add_bounding_box((400,300,800,600))
+
+        return result
+
+    def render_temp(self, value: str) -> PanelWidget:
+        p: PanelWidget = PanelWidget(400, 300)
+
+        split = value.split(".")
+        degree_val = split[0]
+        subdegree_val = split[1]
+
+        temp_text: TextWidget = TextWidget(180, 200, font=self.font_huge)
+        temp_text.left = 0
+        temp_text.top = 0
+        temp_text.horizontal_alignment = Alignments.RIGHT
+        temp_text.text = degree_val
+        p.add_child(temp_text)
+
+        temp2: TextWidget = TextWidget(90,100, font=self.font_large)
+        temp2.left = 190
+        temp2.top = 100
+        temp2.horizontal_alignment = Alignments.LEFT
+        temp2.vertical_alignment = Alignments.TOP
+        temp2.text = "." + subdegree_val
+
+        p.add_child(temp2)
+
+        degree_char: TextWidget = TextWidget(90, 100, font=self.font_weather_large)
+        degree_char.left = 190
+        degree_char.top = 0
+        degree_char.horizontal_alignment = Alignments.LEFT
+        degree_char.vertical_alignment = Alignments.BOTTOM
+        degree_char.text = self.icon_lookup.look_up_with_name('wi_celsius')
+
+        p.add_child(degree_char)
+        return p
+
+
+    def render(self, data: Optional[WeatherModel]) -> RenderResult:
         # image = Image.new('L', (self.window.height, self.window.width), 255)
         image = Image.new('L', (800, 600), 255)
         draw = ImageDraw.Draw(image)
@@ -96,17 +193,17 @@ class Desktop:
         today_time_str = today.strftime("%H:%M")
         draw.text((550, 50), today_time_str, font=self.font_large, fill=0)
 
-    def old_render(self, draw, data: dict) -> None:
-        temp_out_orig: str = read_val(data, 'Outdoor', 'Temperature', '--.-')
-        temp_in_orig: str = read_val(data, 'Indoor', 'Temperature', '--.-')
+    def old_render(self, draw, data: WeatherModel) -> None:
+        temp_out_orig: str = data.outside.temperature
+        temp_in_orig: str = data.inside.temperature
 
         tempOut: str = convert_float(temp_out_orig)
         temp_in: str = convert_float(temp_in_orig)
 
-        humidity_out: str = read_val(data, 'Outdoor', 'Humidity', '--')
-        humidity_in: str = read_val(data, 'Indoor', 'Humidity', '--')
+        humidity_out: str = data.outside.humidity
+        humidity_in: str = data.inside.humidity
 
-        co2_in: str = read_val(data, 'Indoor', 'CO2', '---')
+        co2_in: str = data.inside.co2
 
         draw.line((20, 200, 780, 200), fill=0, width=3)
         draw.line((400, 210, 400, 390), fill=0, width=3)
