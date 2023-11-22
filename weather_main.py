@@ -58,32 +58,36 @@ class Settings:
     project_dir: str
     output_dir: str
     settings_dir: str
+    resources_dir: str
 
     def __init__(self, **kwargs):
         self.args = kwargs
 
 
 @click.command(name='demo')
+@click.option('--modern/--no-modern', default=False)
 @click.pass_obj
-def draw_demo(settings):
+def draw_demo(settings: Settings, modern: bool):
     desktop = Desktop(settings.resources_dir)
     data1: Optional[WeatherModel] = None
-    draw_one_demo_file(data1, desktop, settings.output_dir, "demo_nodata")
+    rr1: RenderResult = desktop.render_modern(data1) if modern else desktop.render(data1)
+    save_demo_file(rr1, desktop, settings.output_dir, "demo_nodata")
     data2: WeatherModel = WeatherModel(
         WeatherOutsideModel(None, None),
         WeatherInsideModel(None, None, None)
     )
-    draw_one_demo_file(data2, desktop, settings.output_dir, "demo_empty")
+    rr2: RenderResult = desktop.render_modern(data2) if modern else desktop.render(data2)
+    save_demo_file(rr2, desktop, settings.output_dir, "demo_empty")
     data3: WeatherModel = WeatherModel(
         WeatherOutsideModel('1.1', '56'),
         WeatherInsideModel('24.3', '65', '1223')
     )
-    draw_one_demo_file(data3, desktop, settings.output_dir, "demo_data3")
+    rr3: RenderResult = desktop.render_modern(data3) if modern else desktop.render(data3)
+    save_demo_file(rr3, desktop, settings.output_dir, "demo_data3")
     logging.info("Demo pictures printed. Exitting.")
 
 
-def draw_one_demo_file(data: WeatherModel, desktop: Desktop, output_dir: str, filename: str):
-    rr: RenderResult = desktop.render_modern(data)
+def save_demo_file(rr: RenderResult, desktop: Desktop, output_dir: str, filename: str):
     image = rr.image
     full_filename = os.path.join(output_dir, filename) + ".png"
     image.save(full_filename, "PNG")

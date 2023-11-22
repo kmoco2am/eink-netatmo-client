@@ -25,6 +25,11 @@ pipenv sync
 pipenv run python ./weather_main.py --driver=IT8951 --debug demo
 ```
 
+```bash
+pipenv run python ./weather_main.py --driver=IT8951 --debug demo --modern
+```
+
+
 ### Generate Real Picture
 ```bash
 pipenv run python ./weather_main.py --driver=Bitmap --debug main
