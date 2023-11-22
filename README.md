@@ -12,15 +12,27 @@ Credits:
 
 ## Development
 
-```
+```bash
+brew install python@3.8
+
 pipenv --rm
 pipenv --python 3.8
 pipenv sync
 ```
 
+### Generate Demo Pictures
+```bash
+pipenv run python ./weather_main.py --driver=IT8951 --debug demo
+```
+
+### Generate Real Picture
+```bash
+pipenv run python ./weather_main.py --driver=Bitmap --debug main
+```
+
 ## Python 3.8 on Raspberry Pi
 
-```
+```bash
 sudo apt-get update
 sudo apt-get install -y build-essential tk-dev libncurses5-dev libncursesw5-dev libreadline6-dev libdb5.3-dev \
     libgdbm-dev libsqlite3-dev libssl-dev libbz2-dev libexpat1-dev liblzma-dev zlib1g-dev libffi-dev
@@ -37,7 +49,7 @@ sudo make altinstall
 
 ## Installation by Systemd
 
-```
+```bash
 sudo cp weather_main.service /etc/systemd/system/weather_main.service
 sudo systemctl start weather_main.service
 
@@ -52,7 +64,7 @@ sudo systemctl restart weather_main.service
 
 ## Run it manually
 
-```
+```bash
 sudo 
 
 sudo \
