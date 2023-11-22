@@ -3,6 +3,7 @@ from drivers.drivers_base import DisplayDriver
 import array
 import struct
 import time
+import logging
 
 try:
     import spidev
@@ -208,11 +209,11 @@ class IT8951(DisplayDriver):
         lut_version = self.fixup_string(lut_version)
         self.img_addr = img_addr_h << 16 | img_addr_l
 
-        print("width = %d" % self.width)
-        print("height = %d" % self.height)
-        print("img_addr = %08x" % self.img_addr)
-        print("firmware = %s" % firmware_version)
-        print("lut = %s" % lut_version)
+        logging.info("width = %d" % self.width)
+        logging.info("height = %d" % self.height)
+        logging.info("img_addr = %08x" % self.img_addr)
+        logging.info("firmware = %s" % firmware_version)
+        logging.info("lut = %s" % lut_version)
 
         # Ensure that the returned device info looks sane. If it doesn't, then
         # there is little chance that any of the other operations are going to
@@ -226,7 +227,7 @@ class IT8951(DisplayDriver):
 
         if self.VCOM != self.get_vcom():
             self.set_vcom(self.VCOM)
-            print("VCOM = -%.02fV" % (self.get_vcom() / 1000.0))
+            logging.info("VCOM = -%.02fV" % (self.get_vcom() / 1000.0))
 
         # Initialize the display with a blank image.
         self.wait_for_ready()
