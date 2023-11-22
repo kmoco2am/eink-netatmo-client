@@ -38,9 +38,9 @@ class TextWidget(WidgetBase):
 
     def draw(self, draw: ImageDraw):
         super().draw(draw)
-        left, top, right, bottom = draw.textbbox((0,0), self._text, font=self._font)
-        font_w = right - left
-        font_h = top - bottom
+        t_left, t_top, t_right, t_bottom = draw.textbbox((0,0), self._text, font=self._font)
+        font_w = t_right - t_left
+        font_h = t_bottom - t_top
         if font_h <= self.height and font_w <= self.width:
             left_offset = self.abs_left
             if self._horizontal_align == Alignments.CENTER:
@@ -49,8 +49,10 @@ class TextWidget(WidgetBase):
                 left_offset += self.width - font_w
             top_offset = self.abs_top
             if self._vertical_align == Alignments.CENTER:
-                top_offset += (self.height - font_h) // 2 - 1
+                top_offset += (self.height - font_h) // 2
             elif self._vertical_align == Alignments.BOTTOM:
                 top_offset += self.height - font_h
+            left_offset -= t_left
+            top_offset -= t_top
             draw.text((left_offset, top_offset), self.text,
                       fill=self.foreground, font=self._font)
