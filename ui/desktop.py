@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont, ImageChops
 
-from model.weather import WeatherModel
+from model.weather import WeatherModel, WeatherInsideModel, WeatherOutsideModel
 from ui.render_result import RenderResult
 from widget.alignments import Alignments
 from widget.panel import PanelWidget
@@ -82,36 +82,31 @@ class Desktop:
         if data is None:
             pass
         else:
-            temp_out_orig: str = data.outside.temperature
-            temp_in_orig: str = data.inside.temperature
-
-            tempOut: str = convert_float(temp_out_orig)
-            temp_in: str = convert_float(temp_in_orig)
-
             humidity_out: str = data.outside.humidity
-            humidity_in: str = data.inside.humidity
 
-            co2_in: str = data.inside.co2
-
-            indoor_panel: PanelWidget = self.render_temp(temp_in)
-            indoor_panel.left = 00
+            indoor_panel: PanelWidget = self.render_indoor(data.inside)
+            indoor_panel.left = 0
             indoor_panel.top = 0
-
             main_panel.add_child(indoor_panel)
+
+            outdoor_panel: PanelWidget = self.render_outdoor(data.outside)
+            outdoor_panel.left = 400
+            outdoor_panel.top = 300
+            main_panel.add_child(outdoor_panel)
 
         # time
         today: datetime = datetime.today()
 
         clock_text: TextWidget = TextWidget(400, 140, font=self.font_huge)
         clock_text.left = 400
-        clock_text.top = 70
+        clock_text.top = 50
         clock_text.text = today.strftime("%H:%M")
         main_panel.add_child(clock_text)
 
-        date_text: TextWidget = TextWidget(370, 50, font=self.font_medium)
-        date_text.left = 415
-        date_text.top = 15
-        date_text.horizontal_alignment = Alignments.LEFT
+        date_text: TextWidget = TextWidget(400, 50, font=self.font_medium)
+        date_text.left = 400
+        date_text.top = 0
+        date_text.horizontal_alignment = Alignments.CENTER
         date_text.text = today.strftime("%d %B %Y")
         main_panel.add_child(date_text)
 
@@ -125,32 +120,92 @@ class Desktop:
 
         return result
 
-    def render_temp(self, value: str) -> PanelWidget:
+    def render_outdoor(self, outdoor_data: WeatherOutsideModel) -> PanelWidget:
         p: PanelWidget = PanelWidget(400, 300)
+
+        temp_orig: str = outdoor_data.temperature
+        temp_val: str = convert_float(temp_orig)
+
+        temp_panel: PanelWidget = self.render_temp(temp_val)
+        temp_panel.left = 50
+        temp_panel.top = 80
+        p.add_child(temp_panel)
+
+        return p
+
+    def render_indoor(self, indoor_data: WeatherInsideModel) -> PanelWidget:
+        p: PanelWidget = PanelWidget(400, 300)
+
+        temp_in_orig: str = indoor_data.temperature
+        temp_in: str = convert_float(temp_in_orig)
+
+        temp_panel: PanelWidget = self.render_temp(temp_in)
+        temp_panel.left = 50
+        temp_panel.top = 80
+
+        humidity_in: str = indoor_data.humidity
+
+        co2_in: str = indoor_data.co2
+
+        t1: TextWidget = TextWidget(30,30, font=self.font_weather_medium)
+        t1.text = self.icon_lookup.look_up_with_name('wi_barometer')
+        t1.left = 50
+        t1.top = temp_panel.top + temp_panel.height
+        p.add_child(t1)
+
+        t2: TextWidget = TextWidget(100,30, font=self.font_medium)
+        t2.horizontal_alignment = Alignments.RIGHT
+        t2.text = co2_in
+        t2.left = t1.left + t1.width
+        t2.top = temp_panel.top + temp_panel.height
+        p.add_child(t2)
+
+        t3: TextWidget = TextWidget(50,30, font=self.font_small)
+        t3.horizontal_alignment = Alignments.LEFT
+        t3.vertical_alignment = Alignments.BOTTOM
+        t3.text = "ppm"
+        t3.left = t2.left + t2.width + 10
+        t3.top = temp_panel.top + temp_panel.height
+        p.add_child(t3)
+
+        p.add_child(temp_panel)
+        return p
+
+    def render_temp(self, value: str) -> PanelWidget:
+        p: PanelWidget = PanelWidget(280, 130)
 
         split = value.split(".")
         degree_val = split[0]
         subdegree_val = split[1]
 
-        temp_text: TextWidget = TextWidget(180, 200, font=self.font_huge)
-        temp_text.left = 0
+        m: TextWidget = TextWidget(50,80, self.font_weather_large)
+        m.left = 0
+        m.top = 0
+        m.horizontal_alignment = Alignments.LEFT
+        m.vertical_alignment = Alignments.TOP
+        m.text = self.icon_lookup.look_up_with_name('wi_thermometer')
+        p.add_child(m)
+
+        temp_text: TextWidget = TextWidget(150, 130, font=self.font_huge)
+        temp_text.left = 30
         temp_text.top = 0
         temp_text.horizontal_alignment = Alignments.RIGHT
+        temp_text.vertical_alignment = Alignments.TOP
         temp_text.text = degree_val
         p.add_child(temp_text)
 
-        temp2: TextWidget = TextWidget(90,100, font=self.font_large)
+        temp2: TextWidget = TextWidget(90,70, font=self.font_large)
         temp2.left = 190
-        temp2.top = 100
+        temp2.top = 0
         temp2.horizontal_alignment = Alignments.LEFT
         temp2.vertical_alignment = Alignments.TOP
         temp2.text = "." + subdegree_val
 
         p.add_child(temp2)
 
-        degree_char: TextWidget = TextWidget(90, 100, font=self.font_weather_large)
+        degree_char: TextWidget = TextWidget(90, 40, font=self.font_weather_large)
         degree_char.left = 190
-        degree_char.top = 0
+        degree_char.top = 70
         degree_char.horizontal_alignment = Alignments.LEFT
         degree_char.vertical_alignment = Alignments.BOTTOM
         degree_char.text = self.icon_lookup.look_up_with_name('wi_celsius')
