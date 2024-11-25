@@ -52,7 +52,11 @@ class WeatherModel:
         self.outside = outside
         self.inside = inside
 
+
 class NetatmoDataLoader:
+
+    auth: lnetatmo.ClientAuth
+
     def __init__(self) -> None:
         logging.info("Netatmo authentication")
         self.auth = lnetatmo.ClientAuth()
