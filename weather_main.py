@@ -1,9 +1,12 @@
+import datetime
+import locale
 import os
 import socket
 import time
 import logging
 from typing import Optional
 
+from model.open import OpenWeatherDataLoader, WeatherGenericData
 from model.weather import NetatmoDataLoader, WeatherModel, WeatherOutsideModel, WeatherInsideModel
 from schedule import configure_signals, ProgramKilled
 import click
@@ -14,6 +17,10 @@ from PIL import Image
 from ui.desktop import Desktop
 from ui.render_result import RenderResult, BoundingBox
 
+REDRAW_INTERVAL_SECONDS:int = 30
+REDRAW_PARTIAL_NUMBER:int = 5
+
+locale.setlocale(locale.LC_ALL, 'cs_CZ.UTF-8')
 
 class WeatherClientMain:
     """The main class for Netatmo Weather Station client"""
@@ -70,21 +77,34 @@ class Settings:
 def draw_demo(settings: Settings, modern: bool):
     desktop = Desktop(settings.resources_dir)
     data1: Optional[WeatherModel] = None
-    rr1: RenderResult = desktop.render_modern(data1) if modern else desktop.render(data1)
+    gen_data1 = None
+    rr1: RenderResult = desktop.render_modern(data1, gen_data1) if modern else desktop.render(data1)
     save_demo_file(rr1, desktop, settings.output_dir, "demo_nodata")
     data2: WeatherModel = WeatherModel(
         WeatherOutsideModel(None, None),
         WeatherInsideModel(None, None, None)
     )
-    rr2: RenderResult = desktop.render_modern(data2) if modern else desktop.render(data2)
+    today = datetime.datetime.today()
+    gen_data2: WeatherGenericData = WeatherGenericData(
+        today,
+        today + datetime.timedelta(hours=12),
+        803,
+        802,
+        today + datetime.timedelta(hours=3),
+        801,
+        today + datetime.timedelta(hours=6),
+        615,
+        today + datetime.timedelta(hours=9),
+    )
+    rr2: RenderResult = desktop.render_modern(data2, gen_data2) if modern else desktop.render(data2)
     save_demo_file(rr2, desktop, settings.output_dir, "demo_empty")
     data3: WeatherModel = WeatherModel(
-        WeatherOutsideModel('1.1', '56'),
-        WeatherInsideModel('24.3', '65', '1223')
+        WeatherOutsideModel(-28.1, 56),
+        WeatherInsideModel(24.3, 65, 1223)
     )
-    rr3: RenderResult = desktop.render_modern(data3) if modern else desktop.render(data3)
+    rr3: RenderResult = desktop.render_modern(data3, gen_data2) if modern else desktop.render(data3)
     save_demo_file(rr3, desktop, settings.output_dir, "demo_data3")
-    logging.info("Demo pictures printed. Exitting.")
+    logging.info("Demo pictures printed. Exiting.")
 
 
 def save_demo_file(rr: RenderResult, desktop: Desktop, output_dir: str, filename: str):
@@ -101,6 +121,7 @@ def main(settings: Settings):
     wcm: WeatherClientMain = WeatherClientMain(**settings.args)
     wcm.init_display()
     loader = NetatmoDataLoader()
+    owm_loader = OpenWeatherDataLoader()
     desktop = Desktop(settings.resources_dir)
 
     updates: int = 0
@@ -115,13 +136,21 @@ def main(settings: Settings):
             except socket.timeout:
                 logging.warning("Netatmo Socket Timeout")
                 data = None
-            rr: RenderResult = desktop.render(data)
+            gen_data: Optional[WeatherGenericData]
+            try:
+                gen_data = owm_loader.load_data()
+                logging.debug("OWM Data Loaded")
+            except Exception:
+                logging.warning("OWM loading failed")
+                gen_data = None
+
+            rr: RenderResult = desktop.render_modern(data, gen_data)
             image = rr.image
             bbs = rr.bounding_boxes
 
             if updates == 0:
                 # full redraw
-                updates = (updates + 1) % 60
+                updates = (updates + 1) % REDRAW_PARTIAL_NUMBER
                 logging.debug("Full redraw")
                 wcm.driver.draw(0, 0, image)
             else:
@@ -146,11 +175,11 @@ def main(settings: Settings):
 
                 if change_detected:
                     # increment update counter
-                    updates = (updates + 1) % 60
+                    updates = (updates + 1) % REDRAW_PARTIAL_NUMBER
 
             previous_image = image.copy()
             logging.debug("Iteration finished")
-            time.sleep(10)
+            time.sleep(REDRAW_INTERVAL_SECONDS)
         except ProgramKilled:
             logging.info("Weather main killed")
             break

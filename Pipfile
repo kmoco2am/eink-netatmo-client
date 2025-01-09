@@ -10,7 +10,7 @@ spidev = {version = "==3.6", sys_platform = "!= 'darwin'"}
 'RPi.GPIO' = {version = "==0.7.1", sys_platform = "!= 'darwin'"}
 python-dateutil = "*"
 pillow = "*"
-pyowm = "==2.10.0" # OpenWeather API
+pyowm = "*" # OpenWeather API
 click = "*" # Command Line Interface
 pytz = "*"
 lnetatmo = "*"

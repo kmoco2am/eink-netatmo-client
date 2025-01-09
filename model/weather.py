@@ -16,31 +16,31 @@ def sanitize_val(d: dict, value_name: str, default_value: Optional[T]) -> Option
         return default_value
 
 
-DEFAULT_NONE_TEMPERATURE = '-.--'
+DEFAULT_NONE_TEMPERATURE = '--.-'
 DEFAULT_NONE_HUMIDITY = '--'
 DEFAULT_NONE_CO2 = '---'
 
 
 @dataclass
 class WeatherOutsideModel:
-    temperature: str
-    humidity: str
+    temperature: Optional[float]
+    humidity: Optional[int]
 
-    def __init__(self, temperature: Optional[str], humidity: Optional[str]):
-        self.temperature = temperature or DEFAULT_NONE_TEMPERATURE
-        self.humidity = humidity or DEFAULT_NONE_HUMIDITY
+    def __init__(self, temperature: Optional[float], humidity: Optional[int]):
+        self.temperature = temperature
+        self.humidity = humidity
 
 
 @dataclass
 class WeatherInsideModel:
-    temperature: str
-    humidity: str
-    co2: str
+    temperature: Optional[float]
+    humidity: Optional[int]
+    co2: Optional[int]
 
-    def __init__(self, temperature: Optional[str], humidity: Optional[str], co2: Optional[str]):
-        self.temperature = temperature or DEFAULT_NONE_TEMPERATURE
-        self.humidity = humidity or DEFAULT_NONE_HUMIDITY
-        self.co2 = co2 or DEFAULT_NONE_CO2
+    def __init__(self, temperature: Optional[float], humidity: Optional[int], co2: Optional[int]):
+        self.temperature = temperature
+        self.humidity = humidity
+        self.co2 = co2
 
 
 @dataclass
